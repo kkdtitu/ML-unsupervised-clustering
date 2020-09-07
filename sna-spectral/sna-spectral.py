@@ -1,87 +1,102 @@
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances
 
-# generate the data
-# generate random angles between [0, 2pi]
-n = 800
-rangle = 2 * np.pi * np.random.rand(n, 1)
 
-# generate random radius for the first circle
-e = 0.2
-rr = 1.9 + e * np.random.rand(n, 1)
-print("rr", rr)
-rx = rr * np.sin(rangle)
-ry = rr * np.cos(rangle)
-print("rx", rx)
-print("ry", ry)
-x = rx
-y = ry
+file_path = os.path.abspath('nodes.txt')
+nodes_names = {}
+nodes_labels = dict()
+if os.path.exists(file_path):
+    with open(file_path, 'r') as f_h:   #https://cmdlinetips.com/2016/01/opening-a-file-in-python-using-with-statement/
+        for line in f_h.readlines():
+            words = line.split("\t", 4)
+            nodes_names[int(words[0])-1] = words[1]
+            nodes_labels[int(words[0])-1] = int(words[2])       #nodes go from 0 to 1489; so offset by -1 from original numbering
 
-# generate random radius for the second circle
-rr2 = 1.2 + e * np.random.rand(n, 1)
+print(len(nodes_names), nodes_names)
+print(len(nodes_labels), nodes_labels)
 
-rx2 = rr2 * np.sin(rangle)
-ry2 = rr2 * np.cos(rangle)
+A = np.zeros([len(nodes_labels), len(nodes_labels)], dtype=int)
 
-x = np.concatenate((x, rx2))
-y = np.concatenate((y, ry2))
+file_path = os.path.abspath('edges.txt')
+if os.path.exists(file_path):
+    with open(file_path, 'r') as f_h:
+        for line in f_h.readlines():
+            words = line.rstrip().split("\t", 2)
+            x1, x2 = int(words[0]), int(words[1])
+            A[x1-1, x2-1]=1
+            A[x2-1, x1-1] = np.copy(A[x1-1, x2-1])
 
-rx3 = 1.4 + (1.9 - 1.4) * np.random.rand(10, 1)
-ry3 = e * np.random.rand(10, 1)
-
-# uncomment this to comment the two rings;
-x = np.concatenate((x, rx3))
-y = np.concatenate((y, ry3))
-
-print("concatenated x", x)
-print("concatenated y", y)
-
-data = np.concatenate((x, y), axis=1)
-print("data", data)
-
-plt.scatter(data[:, 0], data[:, 1], c='black')
-plt.title('original data')
-plt.show()
-
-# run kmeans on the original coordinates
-K = 2
-kmeans = KMeans(n_clusters=K).fit(data)
-idx = kmeans.labels_
-print("idx", idx)
-
-data_r = data[np.where(idx == 0)]
-data_b = data[np.where(idx == 1)]
-print("len(data), len(data_r), len(data_b)", len(data), len(data_r), len(data_b))
-print("data_r", data_r)
-print("data_b", data_b)
-
-plt.scatter(data_r[:, 0], data_r[:, 1], color='r')
-plt.scatter(data_b[:, 0], data_b[:, 1], color='b')
-
-plt.title('K-means plot')
-plt.show()
-
-distmat0 = pairwise_distances(data) 
-distmat = pairwise_distances(data) * pairwise_distances(data)
-print("distmat0.ndim, distmat0.size, distmat0.shape", distmat0.ndim, distmat0.size, distmat0.shape)
-print("distmat.ndim, distmat.size, distmat.shape", distmat.ndim, distmat.size, distmat.shape)
-print("distmat0", distmat0)
-print("distmat", distmat)
-
-A0 = (distmat < 0.1)                    #Boolean matrix
-A = (distmat < 0.1).astype(np.int)      #Integer matrix
-print("A0", A0)
+print("A.ndim, A.shape, A.size", A.ndim, A.shape, A.size)
 print("A", A)
 
-plt.spy(A)                      #can add markersize=0.1
-plt.title('Adjacency Matrix')
-plt.show()
-
-D = np.diag(np.sum(A, axis=1))
+D = np.diag(np.sum(A, axis=1))      #https://numpy.org/doc/stable/reference/generated/numpy.sum.html
+                                    #https://numpy.org/doc/stable/reference/generated/numpy.diag.html
 print("D ", D)
+print("D.ndim, D.shape, D.size", D.ndim, D.shape, D.size)
+
 L = D - A
+print("L.ndim, L.shape, L.size", L.ndim, L.shape, L.size)
+print("L ", L)
+print("L[0, :] ", L[0, :])
+print("L[1, :] ", L[1, :])
+print("L[1488, :] ", L[1488, :])
+print("L[1489, :] ", L[1489, :])
+print("sum(L[0, :]) ", sum(L[0, :]))
+print("sum(L[1, :]) ", sum(L[1, :]))
+print("sum(L[1488, :]) ", sum(L[1488, :]))
+print("sum(L[1489, :]) ", sum(L[1489, :]))
+
+eig_w, eig_v = np.linalg.eig(L)
+print("ndim, shape, eig_w of L", eig_w.ndim, eig_w.shape, "\n", eig_w)
+print("ndim, shap, eig_v of L", eig_v.ndim, eig_v.shape, "\n", eig_v)
+
+#Extract the real components
+eig_w = eig_w.real
+eig_v = eig_v.real
+
+eig_w_2d = eig_w.reshape(1, eig_w.shape[0])
+print("eig_w_2d \n", eig_w_2d)
+print("eig_v \n", eig_v)
+print("eig_v[0,0], eig_v[0,1], eig_v[1,0]", eig_v[0,0], eig_v[0,1], eig_v[1,0])
+print("eig_v[:,0], eig_v[:,1] \n", eig_v[:,0], "\n", eig_v[:,1])
+print("eig_v[:, 0:2]", eig_v[:, 0:2])
+print("eig_v[:, [0,1]]", eig_v[:, [0,1]])
+
+eig_w_v = np.concatenate((eig_w_2d, eig_v), axis=0)   #row0 are eig_w. Each col is:  one eig_w + corresponding eig_v
+print("eig_w_v[:,0], eig_w_v[:,1], eig_w_v[:,2] \n", eig_w_v[:,0], "\n", eig_w_v[:,1], "\n", eig_w_v[:,2])
+
+print("eig_w_v[:,1489], eig_w_v[:,1488], eig_w_v[:,1487] \n", eig_w_v[:,1489], "\n", eig_w_v[:,1488], "\n", eig_w_v[:,1487])
+
+
+#Sort all cols based on values in row0/eig_values   https://numpy.org/doc/stable/reference/generated/numpy.argsort.html 
+#https://www.kite.com/python/answers/how-to-sort-the-rows-of-a-numpy-array-by-a-column-in-python
+
+eig_w_v_sorted =  eig_w_v[:, np.argsort(eig_w_v[0,:])]
+print("Sorted eigen values eig_w_v_sorted[0,:] \n", eig_w_v_sorted[0, :])
+print("eig_w_v_sorted[:,0], eig_w_v_sorted[:,1], eig_w_v_sorted[:,2] eig_w_v_sorted[:,3] \n", \
+    eig_w_v_sorted[:,0], "\n", eig_w_v_sorted[:,1], "\n", eig_w_v_sorted[:,2], "\n", eig_w_v_sorted[:,3])
+
+print("eig_w_v_sorted[:,100], eig_w_v_sorted[:,101], eig_w_v_sorted[:,102] eig_w_v_sorted[:,103] \n", \
+    eig_w_v_sorted[:,100], "\n", eig_w_v_sorted[:,101], "\n", eig_w_v_sorted[:,102], "\n", eig_w_v_sorted[:,103])
+
+print("eig_w_v_sorted[:,1489], eig_w_v_sorted[:,1488], eig_w_v_sorted[:,1487] eig_w_v_sorted[:,1486] \n", \
+    eig_w_v_sorted[:,1489], "\n", eig_w_v_sorted[:,1488], "\n", eig_w_v_sorted[:,1487], "\n", eig_w_v_sorted[:,1486])
+
+K = input("Enter the number of clusters to be formed : ")
+try:
+    K = int(K)
+except:
+    print("bad K = ", K, "and so K is being assigned K=2")
+    K=2
+print("K = ", K)
+
+#Now choose the first K 
+
+'''
+
 
 s, v = np.linalg.eig(L)
 print("ndim, shape, eigenvalues of L", s.ndim, s.shape, s)
@@ -104,3 +119,4 @@ plt.scatter(data_m[:, 0],
 
 plt.title('Spectral Clustering')
 plt.show()
+'''
