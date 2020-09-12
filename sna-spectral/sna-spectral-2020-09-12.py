@@ -139,7 +139,7 @@ print("K = ", K)
 
 
 ###########
-eig_w_v_sorted_K = eig_w_v_sorted[1:, 0:2]
+eig_w_v_sorted_K = eig_w_v_sorted[1:, 0:K]
 print("eig_w_v_sorted_K.shape, eig_w_v_sorted[:0], eig_w_v_sorted[:1], eig_w_v_sorted[:2],", \
     eig_w_v_sorted_K.shape, eig_w_v_sorted[:,0], eig_w_v_sorted[:,1], eig_w_v_sorted[:,2])
 
@@ -149,15 +149,10 @@ idx = kmeans.labels_
 count_cluster_not_0 = 0
 for i in range(len(idx)):
     print("idx i", i, idx[i])
-    
+    if idx[i]:
+        count_cluster_not_0 +=1
 
-cluster_nums = list()
-for i in range(K):
-    cluster_nums.append(0)
-for i in range(len(idx)):
-    cluster_nums[idx[i]]+=1
-print("cluster_nums", cluster_nums)
-
+print("count_cluster_not_0 ", count_cluster_not_0 )
 '''
 data_g = data[np.where(idx==0)]
 data_m = data[np.where(idx==1)]
