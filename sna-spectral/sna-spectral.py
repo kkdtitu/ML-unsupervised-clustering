@@ -63,17 +63,20 @@ print("D ", D)
 print("D.ndim, D.shape, D.size", D.ndim, D.shape, D.size)
 sum_0d = 0 
 for i in range(D.shape[0]):
-    print("D i ", i, D[i,i])
+    #print("D i ", i, D[i,i])
     if not D[i,i]:
         sum_0d+=1
-print("sum_0d ", sum_0d)
-#D = np.diag(1/np.sqrt(np.sum(A, axis=1)))      #https://numpy.org/doc/stable/reference/generated/numpy.sum.html
-#                                              #https://numpy.org/doc/stable/reference/generated/numpy.diag.html
-#print("D ", D)
-#print("D.ndim, D.shape, D.size", D.ndim, D.shape, D.size)
+#print("sum_0d ", sum_0d)
+
+##D = np.diag(1/np.sqrt(np.sum(A, axis=1)))      #https://numpy.org/doc/stable/reference/generated/numpy.sum.html
+##                                              #https://numpy.org/doc/stable/reference/generated/numpy.diag.html
+##print("D ", D)
+##print("D.ndim, D.shape, D.size", D.ndim, D.shape, D.size)
 
 
 L = D - A
+
+
 print("L.ndim, L.shape, L.size", L.ndim, L.shape, L.size)
 print("L ", L)
 print("L[0, :] ", L[0, :])
@@ -84,6 +87,7 @@ print("sum(L[0, :]) ", sum(L[0, :]))
 print("sum(L[1, :]) ", sum(L[1, :]))
 print("sum(L[1188, :]) ", sum(L[1188, :]))
 print("sum(L[1189, :]) ", sum(L[1189, :]))
+
 
 eig_w, eig_v = np.linalg.eig(L)
 print("ndim, shape, eig_w of L", eig_w.ndim, eig_w.shape, "\n", eig_w)
@@ -118,12 +122,12 @@ print("eig_w_v_sorted[:,0], eig_w_v_sorted[:,1], eig_w_v_sorted[:,2] eig_w_v_sor
 print("eig_w_v_sorted[:,4], eig_w_v_sorted[:,5], eig_w_v_sorted[:6] eig_w_v_sorted[:,7] \n", \
     eig_w_v_sorted[:,4], "\n", eig_w_v_sorted[:,5], "\n", eig_w_v_sorted[:,6], "\n", eig_w_v_sorted[:,7])
 
-print("eig_w_v_sorted[:,250], eig_w_v_sorted[:,251], eig_w_v_sorted[:,252] eig_w_v_sorted[:,253] \n", \
-    eig_w_v_sorted[:,250], "\n", eig_w_v_sorted[:,251], "\n", eig_w_v_sorted[:,252], "\n", eig_w_v_sorted[:,253])
+#print("eig_w_v_sorted[:,250], eig_w_v_sorted[:,251], eig_w_v_sorted[:,252] eig_w_v_sorted[:,253] \n", \
+#    eig_w_v_sorted[:,250], "\n", eig_w_v_sorted[:,251], "\n", eig_w_v_sorted[:,252], "\n", eig_w_v_sorted[:,253])
 
 
-print("eig_w_v_sorted[:,1220], eig_w_v_sorted[:,1221], eig_w_v_sorted[:,1222] eig_w_v_sorted[:,1223] \n", \
-    eig_w_v_sorted[:,1220], "\n", eig_w_v_sorted[:,1221], "\n", eig_w_v_sorted[:,1222], "\n", eig_w_v_sorted[:,1223])
+#print("eig_w_v_sorted[:,1220], eig_w_v_sorted[:,1221], eig_w_v_sorted[:,1222] eig_w_v_sorted[:,1223] \n", \
+#    eig_w_v_sorted[:,1220], "\n", eig_w_v_sorted[:,1221], "\n", eig_w_v_sorted[:,1222], "\n", eig_w_v_sorted[:,1223])
 
 
 
@@ -132,14 +136,14 @@ try:
     K = int(K)
 except:
     print("bad K = ", K, "and so K is being assigned K=2")
-    K=2
+    K=15
 print("K = ", K)
 
 #Now choose the first K 
 
 
 ###########
-eig_w_v_sorted_K = eig_w_v_sorted[1:, 0:2]
+eig_w_v_sorted_K = eig_w_v_sorted[1:, 3:5]
 print("eig_w_v_sorted_K.shape, eig_w_v_sorted[:0], eig_w_v_sorted[:1], eig_w_v_sorted[:2],", \
     eig_w_v_sorted_K.shape, eig_w_v_sorted[:,0], eig_w_v_sorted[:,1], eig_w_v_sorted[:,2])
 
@@ -147,29 +151,33 @@ kmeans = KMeans(n_clusters=K).fit(eig_w_v_sorted_K)
 idx = kmeans.labels_
 
 count_cluster_not_0 = 0
-for i in range(len(idx)):
-    print("idx i", i, idx[i])
+#for i in range(len(idx)):
+#    print("idx i", i, idx[i])
     
 
 cluster_nums = list()
+clustered_nodes_nums = dict()
+clustered_nodes_labels = dict()
+
 for i in range(K):
     cluster_nums.append(0)
+    clustered_nodes_nums[i] = list()
+    clustered_nodes_labels[i] = list()
 for i in range(len(idx)):
     cluster_nums[idx[i]]+=1
-print("cluster_nums", cluster_nums)
+    clustered_nodes_nums[idx[i]].append(nodes_nums_adj[i])
+    orig_index = nodes_nums.index(nodes_nums_adj[i])
+    clustered_nodes_labels[idx[i]].append(nodes_labels[orig_index])
 
-'''
-data_g = data[np.where(idx==0)]
-data_m = data[np.where(idx==1)]
+print("cluster_nums", cluster_nums)    
+print("clustered_nodes_nums", clustered_nodes_nums)
+print("clustered_nodes_labels", clustered_nodes_labels)
 
-plt.scatter(data_g[:, 0], 
-            data_g[:, 1],
-            c='g')
+clustered_mismatches = {}
+for i in range(K):
+    num_of_nodes = len(clustered_nodes_labels[i])
+    sum_of_labels = sum(clustered_nodes_labels[i])
+    mismatch = sum_of_labels if sum_of_labels < num_of_nodes/2 else (num_of_nodes-sum_of_labels)
+    mismatch_rate = int((mismatch/num_of_nodes)*100)
+    print("cluster :", i, "\tnum_of_nodes :", num_of_nodes, "\t\tsum_of_labels :", sum_of_labels, "\t\tmismatch_rate :", mismatch_rate, "%")
 
-plt.scatter(data_m[:, 0], 
-            data_m[:, 1],
-            c='m')
-
-plt.title('Spectral Clustering')
-plt.show()
-'''
